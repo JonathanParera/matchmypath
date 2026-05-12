@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// TABEL 1: PENGGUNA
+model User {
+  id        Int               @id @default(autoincrement())
+  name      String
+  email     String            @unique
+  password  String            
+  histories AnalysisHistory[] // Relasi One-to-Many
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+// TABEL 2: SIDE HUSTLE (Pekerjaan)
+model SideHustle {
+  id              Int               @id @default(autoincrement())
+  name            String
+  category        String
+  minCapital      Float
+  timePerDay      Int      
+  vibe            String   
+  requiredSkill   String   
+  targetProfit    String   
+  riskWarning     String            @db.Text
+  steps           String            @db.Text
+  sustainability  Float             @default(0)
+  barrierToEntry  Float             @default(0)
+  profitPotential Float             @default(0)
+  histories       AnalysisHistory[] // Relasi One-to-Many
+}
+
+// TABEL 3: RIWAYAT ANALISIS (Cloud History)
+model AnalysisHistory {
+  id              Int        @id @default(autoincrement())
+  userId          Int
+  user            User       @relation(fields: [userId], references: [id])
+  sideHustleId    Int
+  sideHustle      SideHustle @relation(fields: [sideHustleId], references: [id])
+  matchScore      Float      
+  inputModal      Float      
+  inputSkill      String
+  top3Data        String?    @db.Text
+  createdAt       DateTime   @default(now())
+}
