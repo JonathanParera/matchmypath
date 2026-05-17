@@ -8,16 +8,41 @@ export default function UserDashboard() {
   const [results, setResults] = useState<any[]>([]);
   const [trendsData, setTrendsData] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
+  
+  // STATE KUOTA & STATUS PREMIUM
+  const [usageCount, setUsageCount] = useState(0);
+  const [isPremium, setIsPremium] = useState(false); 
+  const maxFreeLimit = 3; 
 
   useEffect(() => {
-    // Load Riwayat & Tren
-    const saved = localStorage.getItem('ahpHistory');
-    if (saved) setHistory(JSON.parse(saved));
-    fetch('/api/trends').then(res => res.json()).then(data => setTrendsData(data)).catch(()=>console.log("no API"));
+    const savedHistory = localStorage.getItem('ahpHistory');
+    if (savedHistory) setHistory(JSON.parse(savedHistory));
+
+    const savedUsage = localStorage.getItem('ahpUsageCount');
+    if (savedUsage) setUsageCount(parseInt(savedUsage, 10));
+
+    // Membaca status premium asli dari transaksi user
+    const premiumStatus = localStorage.getItem('ahpIsPremium') === 'true';
+    setIsPremium(premiumStatus);
+
+    fetch('/api/trends')
+      .then(res => res.json())
+      .then(data => setTrendsData(data))
+      .catch(() => console.log("no API"));
   }, []);
 
   const handleSimulate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Proteksi kuota jika bukan premium
+    if (!isPremium && usageCount >= maxFreeLimit) {
+      alert(
+        "🔒 Batas Kuota Uji Coba Gratis Habis!\n\n" +
+        "Silakan lakukan aktivasi pada menu 'UPGRADE PRO' untuk membuka pembatasan kriteria."
+      );
+      return;
+    }
+
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
@@ -41,6 +66,13 @@ export default function UserDashboard() {
       const updatedHistory = [newHistoryItem, ...history];
       setHistory(updatedHistory);
       localStorage.setItem('ahpHistory', JSON.stringify(updatedHistory));
+
+      if (!isPremium) {
+        const newCount = usageCount + 1;
+        setUsageCount(newCount);
+        localStorage.setItem('ahpUsageCount', newCount.toString());
+      }
+
     } catch (err) {
       alert("Gagal menghitung AHP.");
     } finally {
@@ -57,7 +89,7 @@ export default function UserDashboard() {
   return (
     <div className="min-h-screen bg-[#050b14] font-sans text-slate-300 relative overflow-hidden">
       
-      {/* BACKGROUND DIGITAL CYBER (Pola Titik & Glowing) */}
+      {/* BACKGROUND DIGITAL CYBER */}
       <div className="absolute inset-0 z-0 opacity-[0.15]" style={{ backgroundImage: 'radial-gradient(#22d3ee 1.5px, transparent 1.5px), radial-gradient(#8b5cf6 1.5px, transparent 1.5px)', backgroundSize: '40px 40px', backgroundPosition: '0 0, 20px 20px' }}></div>
       <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none z-0"></div>
       <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-violet-600/10 blur-[120px] rounded-full pointer-events-none z-0"></div>
@@ -65,7 +97,6 @@ export default function UserDashboard() {
       {/* TOP NAVBAR */}
       <nav className="relative z-50 bg-[#0a1120]/80 backdrop-blur-xl border-b border-cyan-500/20 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 shadow-[0_4px_30px_rgba(34,211,238,0.05)]">
         
-        {/* Logo Digital Abstrak & Judul */}
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
             <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -79,16 +110,19 @@ export default function UserDashboard() {
           </span>
         </div>
         
-        {/* Menu Tengah */}
         <div className="flex gap-2 bg-[#050b14] p-1.5 rounded-full border border-cyan-500/20 shadow-inner">
           <button onClick={() => setActiveTab("dashboard")} className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${activeTab === "dashboard" ? "bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-[0_0_15px_rgba(34,211,238,0.4)]" : "text-slate-400 hover:text-white"}`}>Analisis AHP</button>
           <button onClick={() => setActiveTab("tren")} className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${activeTab === "tren" ? "bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-[0_0_15px_rgba(34,211,238,0.4)]" : "text-slate-400 hover:text-white"}`}>Tren Market</button>
           <button onClick={() => setActiveTab("riwayat")} className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${activeTab === "riwayat" ? "bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-[0_0_15px_rgba(34,211,238,0.4)]" : "text-slate-400 hover:text-white"}`}>Riwayat</button>
         </div>
 
-        {/* Tombol Kanan */}
-        <div>
-          <Link href="/" className="text-xs font-bold text-slate-300 hover:text-rose-400 bg-[#050b14] hover:bg-rose-500/10 px-5 py-2.5 rounded-full border border-rose-500/20 hover:border-rose-500/50 transition-all shadow-lg">
+        <div className="flex items-center gap-4">
+          {!isPremium && (
+            <Link href="/pricing" className="text-xs font-extrabold text-slate-900 bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-2 rounded-full shadow-md shadow-amber-500/20">
+              👑 UPGRADE
+            </Link>
+          )}
+          <Link href="/" className="text-xs font-bold text-slate-300 hover:text-rose-400 bg-[#050b14] px-4 py-2 rounded-full border border-slate-800 transition-all">
             Keluar Akses
           </Link>
         </div>
@@ -96,8 +130,6 @@ export default function UserDashboard() {
 
       {/* MAIN CONTENT */}
       <main className="relative z-10 max-w-7xl mx-auto p-6 md:p-10 pt-8">
-        
-        {/* TAMPILAN DASHBOARD AHP */}
         <div className={activeTab === "dashboard" ? "block animate-fade-in" : "hidden"}>
           <div className="mb-8 border-l-4 border-cyan-400 pl-4">
             <h2 className="text-3xl font-extrabold text-white mb-1 tracking-tight">Sistem Keputusan AHP</h2>
@@ -105,22 +137,27 @@ export default function UserDashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            {/* Form Kiri */}
             <div className="lg:col-span-4 bg-[#0a1120]/80 backdrop-blur-md p-6 rounded-3xl border border-cyan-500/20 shadow-[0_0_30px_rgba(34,211,238,0.05)] h-fit relative">
               <div className="absolute top-0 right-10 w-20 h-1 bg-cyan-400 shadow-[0_0_10px_#22d3ee]"></div>
-              <h3 className="text-lg font-bold text-white mb-6 border-b border-slate-800 pb-4 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> Parameter Kriteria
-              </h3>
+              
+              <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> Parameter
+                </h3>
+                
+                <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${isPremium ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : (usageCount >= maxFreeLimit ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20')}`}>
+                  {isPremium ? "👑 PRO UNLIMITED PLAN" : `FREE: ${usageCount} / ${maxFreeLimit} Terpakai`}
+                </span>
+              </div>
               
               <form onSubmit={handleSimulate} className="space-y-5">
                 <div>
                   <label className="block text-xs font-bold text-cyan-400 uppercase tracking-widest mb-2">Modal Tersedia (Rp)</label>
-                  <input name="modal" type="number" defaultValue="0" required className="w-full p-4 bg-[#050b14] border border-slate-800 rounded-xl text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition-all shadow-inner" />
+                  <input name="modal" type="number" defaultValue="0" required disabled={!isPremium && usageCount >= maxFreeLimit} className="w-full p-4 bg-[#050b14] border border-slate-800 rounded-xl text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition-all shadow-inner disabled:opacity-30" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-cyan-400 uppercase tracking-widest mb-2">Keahlian Dominan</label>
-                  <select name="skill" className="w-full p-4 bg-[#050b14] border border-slate-800 rounded-xl text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none shadow-inner">
+                  <select name="skill" disabled={!isPremium && usageCount >= maxFreeLimit} className="w-full p-4 bg-[#050b14] border border-slate-800 rounded-xl text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none shadow-inner disabled:opacity-30">
                     <option value="Visual">Visual / Desain</option>
                     <option value="Teknis">Teknis / IT</option>
                     <option value="Menulis">Menulis / Copywriting</option>
@@ -129,10 +166,15 @@ export default function UserDashboard() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-cyan-400 uppercase tracking-widest mb-2">Waktu Luang (Menit/Hari)</label>
-                  <input name="waktu" type="number" defaultValue="120" required className="w-full p-4 bg-[#050b14] border border-slate-800 rounded-xl text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition-all shadow-inner" />
+                  <input name="waktu" type="number" defaultValue="120" required disabled={!isPremium && usageCount >= maxFreeLimit} className="w-full p-4 bg-[#050b14] border border-slate-800 rounded-xl text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition-all shadow-inner disabled:opacity-30" />
                 </div>
-                <button type="submit" disabled={loading} className="w-full mt-6 py-4 rounded-xl font-extrabold text-white bg-gradient-to-r from-violet-600 to-cyan-500 hover:scale-[1.02] transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)] tracking-widest">
-                  {loading ? "MEMPROSES MATRIKS..." : "KALKULASI AHP ⚡"}
+                
+                <button 
+                  type="submit" 
+                  disabled={loading} 
+                  className={`w-full mt-6 py-4 rounded-xl font-extrabold text-white tracking-widest uppercase transition-all ${!isPremium && usageCount >= maxFreeLimit ? 'bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-violet-600 to-cyan-500 hover:scale-[1.02] shadow-[0_0_20px_rgba(34,211,238,0.3)]'}`}
+                >
+                  {loading ? "MEMPROSES MATRIKS..." : (!isPremium && usageCount >= maxFreeLimit ? "AKSES TERKUNCI 🔒" : "KALKULASI AHP ⚡")}
                 </button>
               </form>
             </div>
@@ -144,8 +186,12 @@ export default function UserDashboard() {
                   <div className="w-20 h-20 mb-6 rounded-2xl bg-[#050b14] border border-slate-800 flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.2)]">
                     <span className="text-4xl animate-bounce">🔮</span>
                   </div>
-                  <h4 className="text-xl font-bold text-white tracking-wide">Menunggu Input Parameter</h4>
-                  <p className="text-slate-500 text-sm mt-2">Kalkulasi algoritma AHP akan ditampilkan di antarmuka ini.</p>
+                  <h4 className="text-xl font-bold text-white tracking-wide">
+                    {!isPremium && usageCount >= maxFreeLimit ? "Kuota Uji Coba Gratis Habis" : "Menunggu Input Parameter"}
+                  </h4>
+                  <p className="text-slate-500 text-sm mt-2">
+                    {!isPremium && usageCount >= maxFreeLimit ? "Silakan lakukan pembayaran simulasi pada menu 'UPGRADE PRO' untuk mendapatkan kuota tanpa batas." : "Kalkulasi algoritma AHP akan ditampilkan di antarmuka ini."}
+                  </p>
                 </div>
               )}
               
@@ -173,7 +219,7 @@ export default function UserDashboard() {
           </div>
         </div>
 
-        {/* TAMPILAN TREN */}
+        {/* TAB TREN & RIWAYAT */}
         <div className={activeTab === "tren" ? "block animate-fade-in" : "hidden"}>
           <div className="mb-8 border-l-4 border-violet-500 pl-4">
             <h2 className="text-3xl font-extrabold text-white mb-1 tracking-tight">Statistik Pasar (API)</h2>
@@ -197,7 +243,6 @@ export default function UserDashboard() {
           )}
         </div>
 
-        {/* TAMPILAN RIWAYAT */}
         <div className={activeTab === "riwayat" ? "block animate-fade-in" : "hidden"}>
           <div className="mb-8 border-l-4 border-slate-400 pl-4">
             <h2 className="text-3xl font-extrabold text-white mb-1 tracking-tight">Riwayat Analisis</h2>

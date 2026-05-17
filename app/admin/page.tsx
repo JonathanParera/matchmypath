@@ -17,20 +17,28 @@ export default function AdminLogin() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    // --- BYPASS PENUH (TANPA API) UNTUK KEPERLUAN VIDEO ---
-    setTimeout(() => {
-      if (email === "jo@gmail.com" || email === "pray@gmail.com") {
-          if (password === "123456") { 
-             router.push("/admin/dashboard");
-          } else {
-             setErrorMsg("Akses Ditolak: Kata Sandi Tidak Valid.");
-             setLoading(false);
-          }
+    try {
+      // Menembak API Login sesungguhnya untuk mengecek ke Database TiDB
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        // Jika cocok dengan database, masuk ke dashboard
+        router.push("/admin/dashboard");
       } else {
-          setErrorMsg("Akses Ditolak: Kredensial Tidak Dikenali.");
-          setLoading(false);
+        // Jika password/email salah
+        setErrorMsg(data.message || "Akses Ditolak: Kredensial Tidak Dikenali.");
       }
-    }, 1500);
+    } catch (err) {
+      setErrorMsg("Akses Ditolak: Server Database Sedang Gangguan.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -56,7 +64,7 @@ export default function AdminLogin() {
              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M2 17L12 22L22 17" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M2 12L12 17L22 12" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 12L17 22L22 12" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           <h2 className="text-2xl font-extrabold text-white mb-1 tracking-tight">Otorisasi Admin</h2>
@@ -72,10 +80,11 @@ export default function AdminLogin() {
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label className="block text-[10px] font-bold text-cyan-400 uppercase tracking-widest mb-2">Email Identifier</label>
+            {/* defaultValue dihapus, diganti placeholder */}
             <input 
               name="email"
               type="email" 
-              defaultValue="jo@gmail.com"
+              placeholder="Masukkan email admin..."
               required
               className="w-full p-4 bg-[#050b14] border border-slate-800 rounded-xl text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition-all shadow-inner text-sm"
             />
@@ -83,10 +92,11 @@ export default function AdminLogin() {
           
           <div>
             <label className="block text-[10px] font-bold text-cyan-400 uppercase tracking-widest mb-2">Security Key</label>
+            {/* defaultValue dihapus, diganti placeholder */}
             <input 
               name="password"
               type="password" 
-              defaultValue="123456"
+              placeholder="••••••••"
               required
               className="w-full p-4 bg-[#050b14] border border-slate-800 rounded-xl text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition-all shadow-inner text-sm"
             />
