@@ -15,6 +15,7 @@ export default function UserDashboard() {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [authError, setAuthError] = useState("");
   const [userName, setUserName] = useState("User");
+  const [userEmail, setUserEmail] = useState(""); // State baru untuk menyimpan email spesifik
 
   const [usageCount, setUsageCount] = useState(0);
   const [isPremium, setIsPremium] = useState(false); 
@@ -22,22 +23,26 @@ export default function UserDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    // Cek apakah user sudah login di memori
+    // Mengecek sesi saat refresh halaman
     const session = localStorage.getItem('matchUserSession');
     const storedName = localStorage.getItem('matchUserName');
-    if (session === 'active') {
+    const storedEmail = localStorage.getItem('matchUserEmail');
+    
+    if (session === 'active' && storedEmail) {
       setIsLoggedIn(true);
       if (storedName) setUserName(storedName);
+      setUserEmail(storedEmail);
+
+      // Ambil kuota dan status khusus untuk EMAIL ini
+      const savedUsage = localStorage.getItem(`ahpUsageCount_${storedEmail}`);
+      if (savedUsage) setUsageCount(parseInt(savedUsage, 10));
+
+      const premiumStatus = localStorage.getItem(`ahpIsPremium_${storedEmail}`) === 'true';
+      setIsPremium(premiumStatus);
     }
 
     const savedHistory = localStorage.getItem('ahpHistory');
     if (savedHistory) setHistory(JSON.parse(savedHistory));
-
-    const savedUsage = localStorage.getItem('ahpUsageCount');
-    if (savedUsage) setUsageCount(parseInt(savedUsage, 10));
-
-    const premiumStatus = localStorage.getItem('ahpIsPremium') === 'true';
-    setIsPremium(premiumStatus);
 
     fetch('/api/trends')
       .then(res => res.json())
@@ -45,7 +50,6 @@ export default function UserDashboard() {
       .catch(() => console.log("no API"));
   }, []);
 
-  // FUNGSI UNTUK REGISTER & LOGIN (TERHUBUNG KE DATABASE TIDB)
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -69,10 +73,23 @@ export default function UserDashboard() {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        const loggedEmail = data.user.email || email;
+        const loggedName = data.user.name || name || 'User';
+
         localStorage.setItem('matchUserSession', 'active');
-        localStorage.setItem('matchUserName', data.user.name || name || 'User');
-        setUserName(data.user.name || name || 'User');
+        localStorage.setItem('matchUserName', loggedName);
+        localStorage.setItem('matchUserEmail', loggedEmail); // Simpan email ke memori
+        
+        setUserName(loggedName);
+        setUserEmail(loggedEmail);
         setIsLoggedIn(true);
+
+        // Langsung cek kuota dan status untuk akun yang baru login ini
+        const savedUsage = localStorage.getItem(`ahpUsageCount_${loggedEmail}`);
+        setUsageCount(savedUsage ? parseInt(savedUsage, 10) : 0);
+
+        const premiumStatus = localStorage.getItem(`ahpIsPremium_${loggedEmail}`) === 'true';
+        setIsPremium(premiumStatus);
       } else {
         setAuthError(data.message || "Otorisasi gagal.");
       }
@@ -113,10 +130,11 @@ export default function UserDashboard() {
       setHistory(updatedHistory);
       localStorage.setItem('ahpHistory', JSON.stringify(updatedHistory));
 
+      // Menambah kuota khusus untuk email ini jika bukan premium
       if (!isPremium) {
         const newCount = usageCount + 1;
         setUsageCount(newCount);
-        localStorage.setItem('ahpUsageCount', newCount.toString());
+        localStorage.setItem(`ahpUsageCount_${userEmail}`, newCount.toString());
       }
     } catch (err) {
       alert("Gagal menghitung AHP.");
@@ -125,19 +143,11 @@ export default function UserDashboard() {
     }
   };
 
-  const handleDeleteHistory = (id: number) => {
-    const updated = history.filter(item => item.id !== id);
-    setHistory(updated);
-    localStorage.setItem('ahpHistory', JSON.stringify(updated));
-  };
-
   return (
     <div className="min-h-screen bg-[#050b14] font-sans text-slate-300 relative overflow-hidden">
-      {/* BACKGROUND DIGITAL CYBER */}
       <div className="absolute inset-0 z-0 opacity-[0.15]" style={{ backgroundImage: 'radial-gradient(#22d3ee 1.5px, transparent 1.5px), radial-gradient(#8b5cf6 1.5px, transparent 1.5px)', backgroundSize: '40px 40px', backgroundPosition: '0 0, 20px 20px' }}></div>
       <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none z-0"></div>
       
-      {/* KONDISI: JIKA BELUM LOGIN, TAMPILKAN LAYAR LOGIN/REGISTER */}
       {!isLoggedIn ? (
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
           <div className="absolute top-6 left-6">
@@ -148,19 +158,13 @@ export default function UserDashboard() {
 
           <div className="w-full max-w-md bg-[#0a1120]/80 backdrop-blur-xl p-10 rounded-3xl border border-cyan-500/20 shadow-[0_0_40px_rgba(34,211,238,0.1)]">
             <div className="text-center mb-8">
-              <div className="w-14 h-14 mx-auto bg-[#050b14] border border-cyan-500/30 rounded-2xl flex items-center justify-center text-2xl mb-4 shadow-[0_0_20px_rgba(34,211,238,0.2)]">
-                🔒
-              </div>
-              <h2 className="text-2xl font-extrabold text-white mb-1 tracking-tight">
-                {isLoginMode ? "Otorisasi Masuk" : "Registrasi Akun"}
-              </h2>
+              <div className="w-14 h-14 mx-auto bg-[#050b14] border border-cyan-500/30 rounded-2xl flex items-center justify-center text-2xl mb-4 shadow-[0_0_20px_rgba(34,211,238,0.2)]">🔒</div>
+              <h2 className="text-2xl font-extrabold text-white mb-1 tracking-tight">{isLoginMode ? "Otorisasi Masuk" : "Registrasi Akun"}</h2>
               <p className="text-[10px] text-cyan-500 uppercase tracking-widest font-bold">Client Secure Gateway</p>
             </div>
 
             {authError && (
-              <div className="mb-6 p-3 bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-bold rounded-xl text-center">
-                {authError}
-              </div>
+              <div className="mb-6 p-3 bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-bold rounded-xl text-center">{authError}</div>
             )}
 
             <form onSubmit={handleAuth} className="space-y-5">
@@ -180,7 +184,7 @@ export default function UserDashboard() {
               </div>
 
               <button type="submit" disabled={loading} className="w-full py-4 mt-2 rounded-xl font-black text-slate-900 bg-gradient-to-r from-cyan-400 to-violet-500 hover:scale-[1.02] transition-all tracking-widest uppercase text-xs shadow-[0_0_20px_rgba(34,211,238,0.3)]">
-                {loading ? "MEMPROSES SERVER..." : (isLoginMode ? "MASUK SISTEM ⚡" : "DAFTARKAN AKUN ⚡")}
+                {loading ? "MEMPROSES..." : (isLoginMode ? "MASUK SISTEM ⚡" : "DAFTARKAN AKUN ⚡")}
               </button>
             </form>
 
@@ -192,17 +196,11 @@ export default function UserDashboard() {
           </div>
         </div>
       ) : (
-
-        /* JIKA SUDAH LOGIN, TAMPILKAN DASHBOARD UTAMA */
         <>
           <nav className="relative z-50 bg-[#0a1120]/80 backdrop-blur-xl border-b border-cyan-500/20 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 shadow-[0_4px_30px_rgba(34,211,238,0.05)]">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M2 17L12 22L22 17" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M2 12L12 17L22 12" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <span className="text-xl">🔮</span>
               </div>
               <div className="flex flex-col">
                 <span className="font-extrabold tracking-widest text-xl bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-violet-400">MatchMyPath</span>
@@ -216,11 +214,10 @@ export default function UserDashboard() {
               <button onClick={() => setActiveTab("riwayat")} className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${activeTab === "riwayat" ? "bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-[0_0_15px_rgba(34,211,238,0.4)]" : "text-slate-400 hover:text-white"}`}>Riwayat</button>
             </div>
 
-            {/* NAVIGASI DASHBOARD (HANYA UPGRADE & BERANDA) */}
             <div className="flex items-center gap-4">
               {!isPremium && (
                 <Link href="/pricing" className="text-xs font-extrabold text-slate-900 bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-2 rounded-full shadow-md shadow-amber-500/20">
-                  👑 UPGRADE
+                  👑 UPGRADE PRO
                 </Link>
               )}
               <Link href="/" className="text-xs font-bold text-slate-300 hover:text-cyan-400 bg-[#050b14] px-5 py-2 rounded-full border border-slate-800 hover:border-cyan-500/30 transition-all uppercase tracking-widest">
@@ -238,14 +235,9 @@ export default function UserDashboard() {
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div className="lg:col-span-4 bg-[#0a1120]/80 backdrop-blur-md p-6 rounded-3xl border border-cyan-500/20 shadow-[0_0_30px_rgba(34,211,238,0.05)] h-fit relative">
-                  <div className="absolute top-0 right-10 w-20 h-1 bg-cyan-400 shadow-[0_0_10px_#22d3ee]"></div>
-                  
                   <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> Parameter
-                    </h3>
-                    
-                    <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${isPremium ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : (usageCount >= maxFreeLimit ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20')}`}>
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">Parameter</h3>
+                    <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${isPremium ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : (usageCount >= maxFreeLimit ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20')}`}>
                       {isPremium ? "👑 PRO UNLIMITED" : `FREE: ${usageCount}/${maxFreeLimit}`}
                     </span>
                   </div>
@@ -269,7 +261,7 @@ export default function UserDashboard() {
                       <input name="waktu" type="number" defaultValue="120" required disabled={!isPremium && usageCount >= maxFreeLimit} className="w-full p-4 bg-[#050b14] border border-slate-800 rounded-xl text-white focus:border-cyan-400 focus:outline-none transition-all shadow-inner disabled:opacity-30" />
                     </div>
                     
-                    <button type="submit" disabled={loading} className={`w-full mt-6 py-4 rounded-xl font-extrabold text-white tracking-widest uppercase transition-all ${!isPremium && usageCount >= maxFreeLimit ? 'bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-violet-600 to-cyan-500 hover:scale-[1.02] shadow-[0_0_20px_rgba(34,211,238,0.3)]'}`}>
+                    <button type="submit" disabled={loading} className={`w-full mt-6 py-4 rounded-xl font-extrabold text-white tracking-widest uppercase transition-all ${!isPremium && usageCount >= maxFreeLimit ? 'bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-violet-600 to-cyan-500 hover:scale-[1.02]'}`}>
                       {loading ? "MEMPROSES..." : (!isPremium && usageCount >= maxFreeLimit ? "AKSES TERKUNCI 🔒" : "KALKULASI AHP ⚡")}
                     </button>
                   </form>
@@ -277,30 +269,24 @@ export default function UserDashboard() {
 
                 <div className="lg:col-span-8">
                   {results.length === 0 && !loading && (
-                    <div className="bg-[#0a1120]/50 border border-cyan-500/20 border-dashed rounded-3xl p-12 text-center flex flex-col items-center justify-center h-full backdrop-blur-sm">
-                      <div className="w-20 h-20 mb-6 rounded-2xl bg-[#050b14] border border-slate-800 flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.2)]">
-                        <span className="text-4xl animate-bounce">🔮</span>
-                      </div>
-                      <h4 className="text-xl font-bold text-white tracking-wide">
-                        {!isPremium && usageCount >= maxFreeLimit ? "Kuota Uji Coba Gratis Habis" : "Menunggu Input Parameter"}
-                      </h4>
-                      <p className="text-slate-500 text-sm mt-2">
-                        {!isPremium && usageCount >= maxFreeLimit ? "Silakan lakukan pembayaran simulasi pada menu 'UPGRADE PRO'." : "Kalkulasi algoritma AHP akan ditampilkan di antarmuka ini."}
-                      </p>
+                    <div className="bg-[#0a1120]/50 border border-cyan-500/20 border-dashed rounded-3xl p-12 text-center flex flex-col items-center justify-center h-full">
+                      <div className="w-20 h-20 mb-6 rounded-2xl bg-[#050b14] border border-slate-800 flex items-center justify-center"><span className="text-4xl animate-bounce">🔮</span></div>
+                      <h4 className="text-xl font-bold text-white tracking-wide">{!isPremium && usageCount >= maxFreeLimit ? "Kuota Gratis Habis" : "Menunggu Parameter"}</h4>
+                      <p className="text-slate-500 text-sm mt-2">{!isPremium && usageCount >= maxFreeLimit ? "Silakan klik menu 'UPGRADE PRO'." : "Kalkulasi algoritma AHP akan ditampilkan di sini."}</p>
                     </div>
                   )}
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {results.map((job) => (
-                      <div key={job.id} className="bg-[#0a1120]/80 backdrop-blur-md p-6 rounded-3xl border border-cyan-500/20 relative overflow-hidden group hover:border-cyan-400/50 transition-all shadow-xl">
-                        <div className="absolute top-0 right-0 bg-gradient-to-l from-cyan-500 to-violet-600 text-white px-4 py-2 rounded-bl-2xl font-black text-sm shadow-lg">{job.matchScore}% KECOCOKAN</div>
+                      <div key={job.id} className="bg-[#0a1120]/80 backdrop-blur-md p-6 rounded-3xl border border-cyan-500/20 relative">
+                        <div className="absolute top-0 right-0 bg-gradient-to-l from-cyan-500 to-violet-600 text-white px-4 py-2 rounded-bl-2xl font-black text-sm">{job.matchScore}% KECOCOKAN</div>
                         <span className="text-[10px] font-bold text-cyan-400 bg-cyan-400/10 px-3 py-1 rounded-full uppercase tracking-wider border border-cyan-400/20">{job.category}</span>
                         <h4 className="text-xl font-bold text-white mt-5 mb-2">{job.name}</h4>
                         <div className="w-full bg-[#050b14] rounded-full h-1.5 mb-4 mt-6 border border-slate-800">
-                          <div className="bg-gradient-to-r from-violet-500 to-cyan-400 h-1.5 rounded-full shadow-[0_0_10px_#22d3ee]" style={{width: `${job.matchScore}%`}}></div>
+                          <div className="bg-gradient-to-r from-violet-500 to-cyan-400 h-1.5 rounded-full" style={{width: `${job.matchScore}%`}}></div>
                         </div>
                         <h5 className="text-[10px] text-cyan-500 font-bold uppercase tracking-widest mb-3 mt-5">Saran Eksekusi:</h5>
-                        <p className="text-sm text-slate-400 leading-relaxed bg-[#050b14] p-4 rounded-xl border border-slate-800">{job.steps}</p>
+                        <p className="text-sm text-slate-400 bg-[#050b14] p-4 rounded-xl border border-slate-800">{job.steps}</p>
                       </div>
                     ))}
                   </div>
@@ -308,7 +294,6 @@ export default function UserDashboard() {
               </div>
             </div>
 
-            {/* TAB TREN & RIWAYAT */}
             <div className={activeTab === "tren" ? "block animate-fade-in" : "hidden"}>
                <div className="text-cyan-400 animate-pulse font-bold bg-[#0a1120]/80 p-6 rounded-xl w-fit border border-cyan-500/20">Data Tren Pasar...</div>
             </div>
@@ -316,7 +301,6 @@ export default function UserDashboard() {
             <div className={activeTab === "riwayat" ? "block animate-fade-in" : "hidden"}>
                <div className="text-slate-500">Log Riwayat Analisis...</div>
             </div>
-
           </main>
         </>
       )}
