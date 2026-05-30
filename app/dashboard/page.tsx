@@ -19,6 +19,7 @@ export default function UserDashboard() {
   const [usageCount, setUsageCount] = useState(0);
   const [isPremium, setIsPremium] = useState(false); 
   const maxFreeLimit = 3; 
+  const router = useRouter();
 
   useEffect(() => {
     // Cek apakah user sudah login di memori
@@ -68,7 +69,6 @@ export default function UserDashboard() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // Berhasil dari Database
         localStorage.setItem('matchUserSession', 'active');
         localStorage.setItem('matchUserName', data.user.name || name || 'User');
         setUserName(data.user.name || name || 'User');
@@ -81,11 +81,6 @@ export default function UserDashboard() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('matchUserSession');
-    setIsLoggedIn(false);
   };
 
   const handleSimulate = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -147,7 +142,7 @@ export default function UserDashboard() {
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
           <div className="absolute top-6 left-6">
             <Link href="/" className="text-xs font-bold text-slate-400 hover:text-cyan-400 transition-colors flex items-center gap-2 bg-[#0a1120]/80 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-full shadow-lg">
-              ← Kembali
+              ← Kembali ke Beranda
             </Link>
           </div>
 
@@ -221,15 +216,16 @@ export default function UserDashboard() {
               <button onClick={() => setActiveTab("riwayat")} className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${activeTab === "riwayat" ? "bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-[0_0_15px_rgba(34,211,238,0.4)]" : "text-slate-400 hover:text-white"}`}>Riwayat</button>
             </div>
 
+            {/* NAVIGASI DASHBOARD (HANYA UPGRADE & BERANDA) */}
             <div className="flex items-center gap-4">
               {!isPremium && (
                 <Link href="/pricing" className="text-xs font-extrabold text-slate-900 bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-2 rounded-full shadow-md shadow-amber-500/20">
                   👑 UPGRADE
                 </Link>
               )}
-              <button onClick={handleLogout} className="text-xs font-bold text-slate-300 hover:text-rose-400 bg-[#050b14] px-4 py-2 rounded-full border border-slate-800 transition-all">
-                Keluar
-              </button>
+              <Link href="/" className="text-xs font-bold text-slate-300 hover:text-cyan-400 bg-[#050b14] px-5 py-2 rounded-full border border-slate-800 hover:border-cyan-500/30 transition-all uppercase tracking-widest">
+                Beranda
+              </Link>
             </div>
           </nav>
 
