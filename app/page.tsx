@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#050b14] relative overflow-x-hidden font-sans text-slate-200">
       
-      {/* BACKGROUND DIGITAL CYBER (Pola Titik & Glowing) */}
+      {/* BACKGROUND DIGITAL CYBER */}
       <div className="fixed inset-0 z-0 opacity-[0.15]" style={{ backgroundImage: 'radial-gradient(#22d3ee 1.5px, transparent 1.5px), radial-gradient(#8b5cf6 1.5px, transparent 1.5px)', backgroundSize: '40px 40px', backgroundPosition: '0 0, 20px 20px' }}></div>
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-violet-600/20 blur-[120px] rounded-full pointer-events-none z-0"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none z-0"></div>
@@ -26,22 +26,26 @@ export default function Home() {
               <span className="font-extrabold tracking-widest text-lg md:text-xl bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-violet-400">
                 MatchMyPath
               </span>
-              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest hidden sm:block">Standard Edition</span>
             </div>
           </div>
 
-          {/* Menu Kanan (Tutorial & Navigasi ke Pricing Token) */}
-          <div className="flex items-center gap-6">
-            <a href="#panduan" className="text-xs font-bold text-slate-300 hover:text-cyan-400 transition-colors hidden md:block">
-              Cara Penggunaan
+          {/* MENU KANAN: LOGIN, REGISTER, & TUTORIAL */}
+          <div className="flex items-center gap-4 md:gap-6">
+            <a href="#panduan" className="text-[10px] md:text-xs font-bold text-slate-300 hover:text-cyan-400 transition-colors hidden md:block uppercase tracking-widest">
+              Tutorial
             </a>
             
-            {/* LINK LANGSUNG MENUJU HALAMAN PEMBAYARAN TOKEN */}
+            {/* TOMBOL MASUK (SIGN IN) */}
+            <Link href="/dashboard" className="text-[10px] md:text-xs font-bold text-slate-300 hover:text-white transition-colors uppercase tracking-widest">
+              Masuk
+            </Link>
+            
+            {/* TOMBOL DAFTAR (SIGN UP) */}
             <Link 
-              href="/pricing"
-              className="text-xs font-extrabold text-slate-900 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 px-5 py-2.5 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all flex items-center gap-2 hover:scale-105"
+              href="/dashboard"
+              className="text-[10px] md:text-xs font-extrabold text-slate-900 bg-gradient-to-r from-cyan-400 to-violet-500 hover:from-cyan-300 hover:to-violet-400 px-5 py-2 md:py-2.5 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all flex items-center gap-2 hover:scale-105 uppercase tracking-widest"
             >
-              <span>👑</span> UPGRADE PRO
+              Daftar Gratis
             </Link>
           </div>
         </div>
@@ -95,22 +99,22 @@ export default function Home() {
           {/* Step 1 */}
           <div className="bg-[#0a1120]/80 p-8 rounded-3xl border border-cyan-500/20 hover:border-cyan-400/50 transition-all shadow-[0_0_30px_rgba(34,211,238,0.05)] text-center group">
             <div className="w-16 h-16 mx-auto bg-cyan-500/10 border border-cyan-500/30 rounded-2xl flex items-center justify-center text-2xl font-black text-cyan-400 mb-6 group-hover:scale-110 transition-transform">1</div>
-            <h4 className="text-xl font-bold text-white mb-3">Input Parameter Profil</h4>
-            <p className="text-sm text-slate-400 leading-relaxed">Masukkan batasan realistis Anda: Ketersediaan Modal (Rupiah), Waktu Luang per hari (Menit), dan Skill Dominan yang paling Anda kuasai.</p>
+            <h4 className="text-xl font-bold text-white mb-3">Registrasi & Input</h4>
+            <p className="text-sm text-slate-400 leading-relaxed">Buat akun secara gratis, lalu masukkan batasan realistis Anda: Ketersediaan Modal, Waktu Luang, dan Skill Dominan.</p>
           </div>
 
           {/* Step 2 */}
           <div className="bg-[#0a1120]/80 p-8 rounded-3xl border border-violet-500/20 hover:border-violet-400/50 transition-all shadow-[0_0_30px_rgba(139,92,246,0.05)] text-center group">
             <div className="w-16 h-16 mx-auto bg-violet-500/10 border border-violet-500/30 rounded-2xl flex items-center justify-center text-2xl font-black text-violet-400 mb-6 group-hover:scale-110 transition-transform">2</div>
             <h4 className="text-xl font-bold text-white mb-3">Kalkulasi Matriks AHP</h4>
-            <p className="text-sm text-slate-400 leading-relaxed">Sistem akan secara otomatis melakukan pembobotan hierarki keputusan berdasarkan database puluhan alternatif pekerjaan yang tersedia secara real-time.</p>
+            <p className="text-sm text-slate-400 leading-relaxed">Sistem akan secara otomatis melakukan pembobotan hierarki keputusan berdasarkan database puluhan alternatif pekerjaan yang tersedia.</p>
           </div>
 
           {/* Step 3 */}
           <div className="bg-[#0a1120]/80 p-8 rounded-3xl border border-blue-500/20 hover:border-blue-400/50 transition-all shadow-[0_0_30px_rgba(59,130,246,0.05)] text-center group">
             <div className="w-16 h-16 mx-auto bg-blue-500/10 border border-blue-500/30 rounded-2xl flex items-center justify-center text-2xl font-black text-blue-400 mb-6 group-hover:scale-110 transition-transform">3</div>
-            <h4 className="text-xl font-bold text-white mb-3">Rekomendasi & Eksekusi</h4>
-            <p className="text-sm text-slate-400 leading-relaxed">Anda akan mendapatkan Top 3 hasil persentase kecocokan pekerjaan (Match Score), lengkap dengan panduan langkah pertama untuk memulainya.</p>
+            <h4 className="text-xl font-bold text-white mb-3">Rekomendasi Utama</h4>
+            <p className="text-sm text-slate-400 leading-relaxed">Anda akan mendapatkan Top 3 hasil persentase kecocokan (Match Score), lengkap dengan panduan eksekusi langkah pertama.</p>
           </div>
         </div>
       </section>

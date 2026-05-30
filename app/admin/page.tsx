@@ -18,8 +18,8 @@ export default function AdminLogin() {
     const password = formData.get("password") as string;
 
     try {
-      // Menembak API Login sesungguhnya untuk mengecek ke Database TiDB
-      const res = await fetch('/api/login', {
+      // MENEMBAK KE API KHUSUS ADMIN
+      const res = await fetch('/api/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -28,14 +28,13 @@ export default function AdminLogin() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // Jika cocok dengan database, masuk ke dashboard
+        // Jika cocok dengan "admin@gmail.com" & "admin123", masuk ke Control Room
         router.push("/admin/dashboard");
       } else {
-        // Jika password/email salah
         setErrorMsg(data.message || "Akses Ditolak: Kredensial Tidak Dikenali.");
       }
     } catch (err) {
-      setErrorMsg("Akses Ditolak: Server Database Sedang Gangguan.");
+      setErrorMsg("Akses Ditolak: Server Keamanan Sedang Gangguan.");
     } finally {
       setLoading(false);
     }
@@ -48,14 +47,12 @@ export default function AdminLogin() {
       <div className="absolute inset-0 z-0 opacity-[0.1]" style={{ backgroundImage: 'radial-gradient(#22d3ee 1.5px, transparent 1.5px), radial-gradient(#8b5cf6 1.5px, transparent 1.5px)', backgroundSize: '40px 40px', backgroundPosition: '0 0, 20px 20px' }}></div>
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none z-0"></div>
 
-      {/* TOMBOL KEMBALI */}
       <div className="absolute top-6 left-6 z-10">
         <Link href="/" className="text-xs font-bold text-slate-400 hover:text-cyan-400 transition-colors flex items-center gap-2 bg-[#0a1120]/80 backdrop-blur-md border border-slate-800 hover:border-cyan-500/50 px-4 py-2 rounded-full shadow-lg">
           ← Kembali ke Sistem Utama
         </Link>
       </div>
 
-      {/* KOTAK LOGIN */}
       <div className="w-full max-w-md bg-[#0a1120]/80 backdrop-blur-xl p-10 rounded-3xl border border-cyan-500/20 shadow-[0_0_40px_rgba(34,211,238,0.1)] relative z-10">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-violet-600 shadow-[0_0_10px_#22d3ee]"></div>
 
@@ -80,11 +77,10 @@ export default function AdminLogin() {
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label className="block text-[10px] font-bold text-cyan-400 uppercase tracking-widest mb-2">Email Identifier</label>
-            {/* defaultValue dihapus, diganti placeholder */}
             <input 
               name="email"
               type="email" 
-              placeholder="Masukkan email admin..."
+              placeholder="admin@gmail.com"
               required
               className="w-full p-4 bg-[#050b14] border border-slate-800 rounded-xl text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition-all shadow-inner text-sm"
             />
@@ -92,7 +88,6 @@ export default function AdminLogin() {
           
           <div>
             <label className="block text-[10px] font-bold text-cyan-400 uppercase tracking-widest mb-2">Security Key</label>
-            {/* defaultValue dihapus, diganti placeholder */}
             <input 
               name="password"
               type="password" 
