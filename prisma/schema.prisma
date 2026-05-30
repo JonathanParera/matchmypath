@@ -49,3 +49,13 @@ model AnalysisHistory {
   top3Data        String?    @db.Text
   createdAt       DateTime   @default(now())
 }
+
+// TABEL 4: TOKEN AKTIVASI PRO
+model Token {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  isUsed      Boolean  @default(false)
+  targetEmail String   // <--- BARU: Menyimpan email pembeli yang sah
+  usedAt      DateTime? // Opsional: Kapan token ini dipakai
+  createdAt   DateTime @default(now())
+}

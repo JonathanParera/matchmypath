@@ -29,22 +29,36 @@ export default function PricingPayment() {
     window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(waMessage)}`, "_blank");
   };
 
-  const handleActivateToken = (e: React.FormEvent) => {
+  const handleActivateToken = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      if (tokenInput.toUpperCase() === SECRET_TOKEN) {
+    try {
+      // Tembak API Validasi Token ke Database
+      const res = await fetch('/api/validate-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          token: tokenInput.toUpperCase(), 
+          email: userEmail 
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
         // SIMPAN STATUS PRO KHUSUS UNTUK EMAIL INI SAJA
         localStorage.setItem(`ahpIsPremium_${userEmail}`, 'true');
-        
-        alert("🎉 AKTIVASI BERHASIL!\n\nToken Valid. Akses MatchMyPath PRO Anda telah dibuka selamanya!");
+        alert(`🎉 AKTIVASI BERHASIL!\n\n${data.message}`);
         router.push("/dashboard"); 
       } else {
-        alert("❌ AKTIVASI GAGAL!\n\nToken tidak valid atau sudah kadaluarsa.");
+        alert(`❌ AKTIVASI GAGAL!\n\n${data.message}`);
       }
-    }, 1000);
+    } catch (err) {
+      alert("Terjadi kesalahan sistem saat memverifikasi token.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
