@@ -7,7 +7,7 @@ export default function UserDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]);
-  const [trendsData, setTrendsData] = useState<any>(null);
+  const [trendsData, setTrendsData] = useState<any[]>([]); // Ubah ke array untuk menampung dummy tren
   const [history, setHistory] = useState<any[]>([]);
   
   // STATE OTORISASI & KUOTA
@@ -15,7 +15,7 @@ export default function UserDashboard() {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [authError, setAuthError] = useState("");
   const [userName, setUserName] = useState("User");
-  const [userEmail, setUserEmail] = useState(""); // State baru untuk menyimpan email spesifik
+  const [userEmail, setUserEmail] = useState(""); 
 
   const [usageCount, setUsageCount] = useState(0);
   const [isPremium, setIsPremium] = useState(false); 
@@ -39,15 +39,22 @@ export default function UserDashboard() {
 
       const premiumStatus = localStorage.getItem(`ahpIsPremium_${storedEmail}`) === 'true';
       setIsPremium(premiumStatus);
+
+      // AMBIL RIWAYAT KHUSUS UNTUK EMAIL INI
+      const savedHistory = localStorage.getItem(`ahpHistory_${storedEmail}`);
+      if (savedHistory) {
+        setHistory(JSON.parse(savedHistory));
+      }
     }
 
-    const savedHistory = localStorage.getItem('ahpHistory');
-    if (savedHistory) setHistory(JSON.parse(savedHistory));
+    // Data Simulasi Tren (Karena API belum siap)
+    setTrendsData([
+      { id: 1, name: "Copywriting", demand: "+85%", color: "text-emerald-400" },
+      { id: 2, name: "Video Editor", demand: "+62%", color: "text-emerald-400" },
+      { id: 3, name: "Data Entry", demand: "-15%", color: "text-rose-400" },
+      { id: 4, name: "Web Dev Basic", demand: "+40%", color: "text-emerald-400" }
+    ]);
 
-    fetch('/api/trends')
-      .then(res => res.json())
-      .then(data => setTrendsData(data))
-      .catch(() => console.log("no API"));
   }, []);
 
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -78,18 +85,22 @@ export default function UserDashboard() {
 
         localStorage.setItem('matchUserSession', 'active');
         localStorage.setItem('matchUserName', loggedName);
-        localStorage.setItem('matchUserEmail', loggedEmail); // Simpan email ke memori
+        localStorage.setItem('matchUserEmail', loggedEmail); 
         
         setUserName(loggedName);
         setUserEmail(loggedEmail);
         setIsLoggedIn(true);
 
-        // Langsung cek kuota dan status untuk akun yang baru login ini
         const savedUsage = localStorage.getItem(`ahpUsageCount_${loggedEmail}`);
         setUsageCount(savedUsage ? parseInt(savedUsage, 10) : 0);
 
         const premiumStatus = localStorage.getItem(`ahpIsPremium_${loggedEmail}`) === 'true';
         setIsPremium(premiumStatus);
+
+        // Tarik riwayat spesifik saat login berhasil
+        const savedHistory = localStorage.getItem(`ahpHistory_${loggedEmail}`);
+        setHistory(savedHistory ? JSON.parse(savedHistory) : []);
+
       } else {
         setAuthError(data.message || "Otorisasi gagal.");
       }
@@ -125,12 +136,21 @@ export default function UserDashboard() {
       setResults(data);
 
       const top3Names = data.slice(0, 3).map((job: any) => job.name);
-      const newHistoryItem = { id: Date.now(), tanggal: new Date().toLocaleString('id-ID'), modalInput: payload.modal, skillInput: payload.skill, top3: top3Names };
+      const newHistoryItem = { 
+        id: Date.now(), 
+        tanggal: new Date().toLocaleString('id-ID'), 
+        modalInput: payload.modal, 
+        skillInput: payload.skill, 
+        waktuInput: payload.waktu,
+        top3: top3Names 
+      };
+      
       const updatedHistory = [newHistoryItem, ...history];
       setHistory(updatedHistory);
-      localStorage.setItem('ahpHistory', JSON.stringify(updatedHistory));
+      
+      // Simpan riwayat diikat dengan email
+      localStorage.setItem(`ahpHistory_${userEmail}`, JSON.stringify(updatedHistory));
 
-      // Menambah kuota khusus untuk email ini jika bukan premium
       if (!isPremium) {
         const newCount = usageCount + 1;
         setUsageCount(newCount);
@@ -141,6 +161,12 @@ export default function UserDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteHistory = (id: number) => {
+    const updatedHistory = history.filter(item => item.id !== id);
+    setHistory(updatedHistory);
+    localStorage.setItem(`ahpHistory_${userEmail}`, JSON.stringify(updatedHistory));
   };
 
   return (
@@ -204,7 +230,7 @@ export default function UserDashboard() {
               </div>
               <div className="flex flex-col">
                 <span className="font-extrabold tracking-widest text-xl bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-violet-400">MatchMyPath</span>
-                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest">👤 Halo, {userName}</span>
+                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest">👤 {userName}</span>
               </div>
             </div>
             
@@ -227,6 +253,8 @@ export default function UserDashboard() {
           </nav>
 
           <main className="relative z-10 max-w-7xl mx-auto p-6 md:p-10 pt-8">
+            
+            {/* TAB 1: DASHBOARD AHP */}
             <div className={activeTab === "dashboard" ? "block animate-fade-in" : "hidden"}>
               <div className="mb-8 border-l-4 border-cyan-400 pl-4">
                 <h2 className="text-3xl font-extrabold text-white mb-1 tracking-tight">Sistem Keputusan AHP</h2>
@@ -294,12 +322,77 @@ export default function UserDashboard() {
               </div>
             </div>
 
+            {/* TAB 2: TREN MARKET */}
             <div className={activeTab === "tren" ? "block animate-fade-in" : "hidden"}>
-               <div className="text-cyan-400 animate-pulse font-bold bg-[#0a1120]/80 p-6 rounded-xl w-fit border border-cyan-500/20">Data Tren Pasar...</div>
+              <div className="mb-8 border-l-4 border-violet-400 pl-4">
+                <h2 className="text-3xl font-extrabold text-white mb-1 tracking-tight">Data Tren Pasar Digital</h2>
+                <p className="text-violet-400/70 text-sm tracking-widest uppercase font-bold">Statistik Permintaan Gig Economy Bulan Ini</p>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {trendsData.map((trend, idx) => (
+                  <div key={idx} className="bg-[#0a1120]/80 border border-slate-800 p-6 rounded-3xl flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden group">
+                    <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-violet-500 to-cyan-400 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">Kategori Bidang</span>
+                    <h3 className="text-xl font-bold text-white mb-4">{trend.name}</h3>
+                    <div className={`text-2xl font-black ${trend.color} bg-[#050b14] px-4 py-2 rounded-2xl border border-slate-800`}>
+                      {trend.demand}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
+            {/* TAB 3: RIWAYAT ANALISIS */}
             <div className={activeTab === "riwayat" ? "block animate-fade-in" : "hidden"}>
-               <div className="text-slate-500">Log Riwayat Analisis...</div>
+              <div className="mb-8 border-l-4 border-blue-400 pl-4">
+                <h2 className="text-3xl font-extrabold text-white mb-1 tracking-tight">Log Riwayat Analisis</h2>
+                <p className="text-blue-400/70 text-sm tracking-widest uppercase font-bold">Rekam Jejak Eksekusi Algoritma (Khusus {userEmail})</p>
+              </div>
+
+              <div className="bg-[#0a1120]/80 backdrop-blur-md rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-slate-400">
+                    <thead className="bg-[#050b14] text-[10px] uppercase text-cyan-500 font-bold border-b border-slate-800">
+                      <tr>
+                        <th className="px-6 py-4">Tanggal Eksekusi</th>
+                        <th className="px-6 py-4">Parameter Input</th>
+                        <th className="px-6 py-4">Top 3 Rekomendasi</th>
+                        <th className="px-6 py-4 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50">
+                      {history.length === 0 ? (
+                        <tr><td colSpan={4} className="px-6 py-10 text-center text-slate-500">Anda belum melakukan analisis apapun.</td></tr>
+                      ) : (
+                        history.map((log) => (
+                          <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">{log.tanggal}</td>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col gap-1 text-[11px]">
+                                <span><strong className="text-emerald-400">Rp</strong> {log.modalInput?.toLocaleString('id-ID')}</span>
+                                <span><strong className="text-cyan-400">Skill:</strong> {log.skillInput}</span>
+                                <span><strong className="text-amber-400">Waktu:</strong> {log.waktuInput}mnt</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 font-bold text-white">
+                              {log.top3 && log.top3.length > 0 ? (
+                                <ol className="list-decimal pl-4 space-y-1">
+                                  {log.top3.map((jobName: string, i: number) => <li key={i}>{jobName}</li>)}
+                                </ol>
+                              ) : "Data tidak tersedia"}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button onClick={() => handleDeleteHistory(log.id)} className="text-rose-400 hover:text-rose-300 text-[10px] font-bold uppercase tracking-wider border border-rose-400/30 px-3 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20">Hapus</button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
             </div>
           </main>
         </>
